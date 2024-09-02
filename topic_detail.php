@@ -82,17 +82,20 @@
                 $topic_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
                 // トピックの取得
-                $sql = "SELECT topic_name, created_at FROM chat_table WHERE topic_id = $topic_id";
+                $sql = "SELECT topic_name FROM chat_table WHERE topic_id = $topic_id";
                 $result = $conn->query($sql);
+                if (!$result) {
+                    die("SQLエラー: " . $conn->error);
+                }
 
                 if ($result->num_rows > 0) {
                     // トピックの表示
                     $row = $result->fetch_assoc();
-                    echo "<h2>" . htmlspecialchars($row["topic_name"]) . "</h2>";
-                    echo "<p>Created at: " . htmlspecialchars($row["created_at"]) . "</p>";
+                    echo "<h2>" , "『" , htmlspecialchars($row["topic_name"]) , "』" . "</h2>";
                 } else {
                     echo "<p>トピックが見つかりませんでした。</p>";
                 }
+                
 
                 // 接続を閉じる
                 $conn->close();
