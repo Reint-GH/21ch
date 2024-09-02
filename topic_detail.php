@@ -91,15 +91,58 @@
                 if ($result->num_rows > 0) {
                     // トピックの表示
                     $row = $result->fetch_assoc();
-                    echo "<h2>" , "『" , htmlspecialchars($row["topic_name"]) , "』" . "</h2>";
+                    echo "<h2>トピックス：" . htmlspecialchars($row["topic_name"]) . "</h2>";
                 } else {
                     echo "<p>トピックが見つかりませんでした。</p>";
                 }
-                
+
+                // コメントの処理
+                if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                    $user_name = isset($_POST['user_name']) ? htmlspecialchars($_POST['user_name'], ENT_QUOTES, 'UTF-8') : '';
+                    $comment = isset($_POST['comment']) ? htmlspecialchars($_POST['comment'], ENT_QUOTES, 'UTF-8') : '';
+
+                    if ($user_name && $comment) {
+                        $stmt = $conn->prepare("INSERT INTO comments (topic_id, user_name, comment) VALUES (?, ?, ?)");
+                        $stmt->bind_param("iss", $topic_id, $user_name, $comment);
+                        if ($stmt->execute()) {
+                            echo "<p>コメントが投稿されました。</p>";
+                        } else {
+                            echo "<p>コメントの投稿に失敗しました。</p>";
+                        }
+                        $stmt->close();
+                    }
+                }
+
+                // コメントの表示
+                $sql = "SELECT user_name, comment, created_at FROM comments WHERE topic_id = $topic_id ORDER BY created_at DESC";
+                $result = $conn->query($sql);
+                if ($result->num_rows > 0) {
+                    echo '<div class="comments">';
+                    while ($row = $result->fetch_assoc()) {
+                        echo '<div class="comment">';
+                        echo '<strong>' . htmlspecialchars($row['user_name']) . '</strong> ';
+                        echo '<span>[' . htmlspecialchars($row['created_at']) . ']</span>';
+                        echo '<p>' . htmlspecialchars($row['comment']) . '</p>';
+                        echo '</div>';
+                    }
+                    echo '</div>';
+                } else {
+                    echo '<p>コメントはまだありません。</p>';
+                }
 
                 // 接続を閉じる
                 $conn->close();
             ?>
+
+            <!-- コメント投稿フォーム -->
+            <div class="comment-form">
+                <h3>コメントを投稿する</h3>
+                <form method="post" action="">
+                    <input type="text" name="user_name" placeholder="名前" required>
+                    <textarea name="comment" placeholder="コメント" rows="4" required></textarea>
+                    <input type="submit" value="投稿">
+                </form>
+            </div>
         </div>
     </div>
     <footer>
