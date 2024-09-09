@@ -102,14 +102,14 @@
                 $topic_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
                 // トピック名の取得
-                $stmt = $conn->prepare("SELECT name FROM chat WHERE ID = ? LIMIT 1");
+                $stmt = $conn->prepare("SELECT topic_name FROM chat_table WHERE topic_id=? LIMIT 1");
                 $stmt->bind_param("i", $topic_id);
                 $stmt->execute();
                 $result = $stmt->get_result();
                 if ($result->num_rows > 0) {
                     // トピック名の表示
                     $row = $result->fetch_assoc();
-                    echo "<h2>トピックス：" . htmlspecialchars($row["name"]) . "</h2>";
+                    echo "<h2>トピックス：" . htmlspecialchars($row["topic_name"]) . "</h2>";
                 } else {
                     echo "<p>トピックが見つかりませんでした。</p>";
                 }
@@ -134,8 +134,8 @@
                         $comment = isset($_POST['comment']) ? htmlspecialchars($_POST['comment'], ENT_QUOTES, 'UTF-8') : '';
 
                         if ($user_name && $comment) {
-                            $stmt = $conn->prepare("INSERT INTO chat (name, user, password, time, TEXT) VALUES (?, ?, '', NOW(), ?)");
-                            $stmt->bind_param("sss", $topic_id, $user_name, $comment);
+                            $stmt = $conn->prepare("INSERT INTO chat (name, user, password, dbname, TEXT) VALUES (?, ?, ?, ?, ?)");
+                            $stmt->bind_param("sss", $user_name, '', '', $topic_id, $comment);
                             if ($stmt->execute()) {
                                 echo "<p>コメントが投稿されました。</p>";
                             } else {
