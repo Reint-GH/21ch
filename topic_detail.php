@@ -10,6 +10,11 @@
             margin: 0;
             padding: 0;
         }
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
         header {
             background-color: #333;
             color: #fff;
@@ -34,9 +39,10 @@
             color: #fff;
             text-align: center;
             padding: 10px 0;
-            position: absolute;
-            bottom: 0;
+            /* position: absolute; */
+            /* bottom: 0; */
             width: 100%;
+            margin-top: auto;
         }
         .container {
             max-width: 960px;
@@ -72,6 +78,7 @@
     </style>
 </head>
 <body>
+    <div class="wrapper">
     <header>
         <h1>21ch</h1>
     </header>
@@ -191,5 +198,6 @@
     <footer>
         <p>&copy; 2024 21ch チームひろゆき</p>
     </footer>
+    </div>
 </body>
 </html>
