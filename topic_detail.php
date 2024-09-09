@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>トピック詳細</title>
     <style>
-        /* CSSスタイルはここに記述する */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -49,6 +48,27 @@
             padding: 20px;
             margin-top: 20px;
         }
+        .comments {
+            margin-top: 20px;
+        }
+        .comment {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+            position: relative;
+        }
+        .comment-form {
+            margin-top: 20px;
+        }
+        .delete-btn {
+            position: absolute;
+            right: 0;
+            top: 10px;
+            background-color: #f00;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -68,67 +88,87 @@
                 $servername = "localhost";
                 $username = "root";
                 $password = "";
-                $dbname = "21ch_db"; // データベース名を修正
+                $dbname = "21ch"; // 使用するデータベース名
 
                 // データベースへの接続
                 $conn = new mysqli($servername, $username, $password, $dbname);
 
                 // 接続の確認
                 if ($conn->connect_error) {
-                    die("Connection failed: " . $conn->connect_error);
+                    die("接続失敗: " . $conn->connect_error);
                 }
 
                 // トピックIDの取得
                 $topic_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-                // トピックの取得
-                $sql = "SELECT topic_name FROM chat_table WHERE topic_id = $topic_id";
-                $result = $conn->query($sql);
-                if (!$result) {
-                    die("SQLエラー: " . $conn->error);
-                }
-
+                // トピック名の取得
+                $stmt = $conn->prepare("SELECT name FROM chat WHERE ID = ? LIMIT 1");
+                $stmt->bind_param("i", $topic_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
                 if ($result->num_rows > 0) {
-                    // トピックの表示
+                    // トピック名の表示
                     $row = $result->fetch_assoc();
-                    echo "<h2>トピックス：" . htmlspecialchars($row["topic_name"]) . "</h2>";
+                    echo "<h2>トピックス：" . htmlspecialchars($row["name"]) . "</h2>";
                 } else {
                     echo "<p>トピックが見つかりませんでした。</p>";
                 }
+                $stmt->close();
 
                 // コメントの処理
                 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-                    $user_name = isset($_POST['user_name']) ? htmlspecialchars($_POST['user_name'], ENT_QUOTES, 'UTF-8') : '';
-                    $comment = isset($_POST['comment']) ? htmlspecialchars($_POST['comment'], ENT_QUOTES, 'UTF-8') : '';
-
-                    if ($user_name && $comment) {
-                        $stmt = $conn->prepare("INSERT INTO comments (topic_id, user_name, comment) VALUES (?, ?, ?)");
-                        $stmt->bind_param("iss", $topic_id, $user_name, $comment);
+                    if (isset($_POST['delete_id'])) {
+                        // コメントの削除
+                        $delete_id = intval($_POST['delete_id']);
+                        $stmt = $conn->prepare("DELETE FROM chat WHERE ID = ?");
+                        $stmt->bind_param("i", $delete_id);
                         if ($stmt->execute()) {
-                            echo "<p>コメントが投稿されました。</p>";
+                            echo "<p>コメントが削除されました。</p>";
                         } else {
-                            echo "<p>コメントの投稿に失敗しました。</p>";
+                            echo "<p>コメントの削除に失敗しました。</p>";
                         }
                         $stmt->close();
+                    } else {
+                        // コメントの追加
+                        $user_name = isset($_POST['user_name']) ? htmlspecialchars($_POST['user_name'], ENT_QUOTES, 'UTF-8') : '';
+                        $comment = isset($_POST['comment']) ? htmlspecialchars($_POST['comment'], ENT_QUOTES, 'UTF-8') : '';
+
+                        if ($user_name && $comment) {
+                            $stmt = $conn->prepare("INSERT INTO chat (name, user, password, time, TEXT) VALUES (?, ?, '', NOW(), ?)");
+                            $stmt->bind_param("sss", $topic_id, $user_name, $comment);
+                            if ($stmt->execute()) {
+                                echo "<p>コメントが投稿されました。</p>";
+                            } else {
+                                echo "<p>コメントの投稿に失敗しました。</p>";
+                            }
+                            $stmt->close();
+                        }
                     }
                 }
 
                 // コメントの表示
-                $sql = "SELECT user_name, comment, created_at FROM comments WHERE topic_id = $topic_id ORDER BY created_at DESC";
-                $result = $conn->query($sql);
+                $stmt = $conn->prepare("SELECT ID, user, TEXT, time FROM chat WHERE name = ? ORDER BY time DESC");
+                $stmt->bind_param("s", $topic_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
                 if ($result->num_rows > 0) {
                     echo '<div class="comments">';
                     while ($row = $result->fetch_assoc()) {
                         echo '<div class="comment">';
-                        echo '<strong>' . htmlspecialchars($row['user_name']) . '</strong> ';
-                        echo '<span>[' . htmlspecialchars($row['created_at']) . ']</span>';
-                        echo '<p>' . htmlspecialchars($row['comment']) . '</p>';
+                        echo '<strong>' . htmlspecialchars($row['user']) . '</strong> ';
+                        echo '<span>[' . htmlspecialchars($row['time']) . ']</span>';
+                        echo '<p>' . htmlspecialchars($row['TEXT']) . '</p>';
+                        echo '<form method="post" action="" style="display:inline;">
+                                <input type="hidden" name="delete_id" value="' . htmlspecialchars($row['ID']) . '">
+                                <button type="submit" class="delete-btn">削除</button>
+                              </form>';
                         echo '</div>';
                     }
                     echo '</div>';
                 } else {
                     echo '<p>コメントはまだありません。</p>';
                 }
+                $stmt->close();
 
                 // 接続を閉じる
                 $conn->close();
