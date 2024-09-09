@@ -3,7 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>トピック詳細</title>
+    <?php
+        $servername = "localhost";
+        $username = "root";
+        $password = "";
+        $dbname = "21ch"; // 使用するデータベース名
+
+        // データベースへの接続
+        $conn = new mysqli($servername, $username, $password, $dbname);
+
+        // 接続の確認
+        if ($conn->connect_error) {
+            die("接続失敗: " . $conn->connect_error);
+        }
+
+        // トピックIDの取得
+        $topic_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+        // トピック名の取得
+        $stmt = $conn->prepare("SELECT topic_name FROM chat_table WHERE topic_id=? LIMIT 1");
+        $stmt->bind_param("i", $topic_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $title = "トピック";
+        if ($result->num_rows > 0) {
+            // トピック名をページタイトルとして設定
+            $row = $result->fetch_assoc();
+            $title = htmlspecialchars($row["topic_name"]);
+        }
+        $stmt->close();
+        $conn->close();
+    ?>
+    <title><?php echo $title; ?></title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -75,6 +106,17 @@
             padding: 5px 10px;
             cursor: pointer;
         }
+
+        .text{
+            width:500px;
+            height:100px;
+        }
+
+        .OK{
+            background-color: #33CC00;
+            color: white;
+        }
+
     </style>
 </head>
 <body>
@@ -122,6 +164,23 @@
                 }
                 $stmt->close();
 
+                ?>
+                
+                                <!-- コメント投稿フォーム -->
+                <div class="comment-form">
+                    <h3>コメントを投稿する</h3>
+                    <form method="post" action="">
+                        <input type="text" name="user_name" placeholder="名前" required>
+                        <br>
+                        <textarea name="comment" placeholder="コメント" rows="4" required class="text"></textarea>
+                        <br>
+                        <input type="submit" value="投稿" class="OK">
+                        <br>
+                    </form>
+                </div>
+
+                <?php
+
                 // コメントの処理
                 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if (isset($_POST['delete_id'])) {
@@ -165,13 +224,14 @@
                     echo '<div class="comments">';
                     while ($row = $result->fetch_assoc()) {
                         echo '<div class="comment">';
+                        echo '<strong>ID:' . htmlspecialchars($row['ID']) . '</strong> ';
                         echo '<strong>' . htmlspecialchars($row['user']) . '</strong> ';
                         echo '<span>[' . htmlspecialchars($row['time']) . ']</span>';
                         echo '<p>' . htmlspecialchars($row['TEXT']) . '</p>';
                         echo '<form method="post" action="" style="display:inline;">
                                 <input type="hidden" name="delete_id" value="' . htmlspecialchars($row['ID']) . '">
                                 <button type="submit" class="delete-btn">削除</button>
-                              </form>';
+                            </form>';
                         echo '</div>';
                     }
                     echo '</div>';
@@ -183,16 +243,6 @@
                 // 接続を閉じる
                 $conn->close();
             ?>
-
-            <!-- コメント投稿フォーム -->
-            <div class="comment-form">
-                <h3>コメントを投稿する</h3>
-                <form method="post" action="">
-                    <input type="text" name="user_name" placeholder="名前" required>
-                    <textarea name="comment" placeholder="コメント" rows="4" required></textarea>
-                    <input type="submit" value="投稿">
-                </form>
-            </div>
         </div>
     </div>
     <footer>

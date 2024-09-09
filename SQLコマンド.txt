@@ -1,2 +1,5 @@
-IDリセット
+IDリセット(chat_table)
 ALTER TABLE chat_table AUTO_INCREMENT = 1;
+
+IDリセット(chat)
+ALTER TABLE chat AUTO_INCREMENT = 1;
