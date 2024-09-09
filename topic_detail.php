@@ -135,7 +135,10 @@
 
                         if ($user_name && $comment) {
                             $stmt = $conn->prepare("INSERT INTO chat (name, user, password, dbname, TEXT) VALUES (?, ?, ?, ?, ?)");
-                            $stmt->bind_param("sss", $user_name, '', '', $topic_id, $comment);
+
+                            $user = "";
+                            $password = "";
+                            $stmt->bind_param("sssss", $user_name, $user, $password, $topic_id, $comment);
                             if ($stmt->execute()) {
                                 echo "<p>コメントが投稿されました。</p>";
                             } else {
@@ -147,7 +150,7 @@
                 }
 
                 // コメントの表示
-                $stmt = $conn->prepare("SELECT ID, user, TEXT, time FROM chat WHERE name = ? ORDER BY time DESC");
+                $stmt = $conn->prepare("SELECT ID, user, TEXT, time FROM chat WHERE dbname = ? ORDER BY time DESC");
                 $stmt->bind_param("s", $topic_id);
                 $stmt->execute();
                 $result = $stmt->get_result();
